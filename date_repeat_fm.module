@@ -1,0 +1,169 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *
+ */
+
+require_once('fdate.class.inc');
+require_once('fdate_cache.class.inc');
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function date_repeat_fm_field_formatter_info() {
+  $formatters = array(
+    'format_fdate' => array('label' => t('Date Formatter'),
+      'field types' => array('date', 'datestamp', 'datetime'),
+      'multiple values' => CONTENT_HANDLE_CORE
+    ),
+    'format_fdate_expanded' => array('label' => t('Date Formatter - Expanded'),
+      'field types' => array('date', 'datestamp', 'datetime'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
+  );
+  return $formatters;
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ *
+ * When viewing a node, this looks for fields that use our
+ * formatters and creates a date object to be available to our
+ * formatters and other theme functions.
+ */
+function date_repeat_fm_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($op == 'view' || $op == 'rss item' || $op == 'search result') {
+    $type = content_types($node->type);
+    $field_types = _content_field_types();
+    foreach ($type['fields'] as $field) {
+      if (in_array($field['type'], array('date', 'datestamp', 'datetime'))) {
+
+        $context = $node->content[$field['field_name']]['#context'];
+
+        if (in_array($field['display_settings'][$context]['format'], array('format_fdate', 'format_fdate_expanded'))) {
+          
+          // Ignore if no value in 'from' date field.
+          if (!$node->{$field['field_name']}[0]['value']) {
+            continue;
+          }
+
+          try {
+            $date = new fDate($node, $field['field_name']);
+            $cache = new fDate_cache();
+            $cache->set($node->nid, $field['field_name'], $date);
+          }
+          catch(Exception $e) {
+            drupal_set_message($e->getMessage(), 'error');
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * This unsets some unrelated fields when our formatters are selected.
+ */
+function date_repeat_fm_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'content_display_overview_form') {
+    $fields = content_fields();
+    $date_fields = array();
+    foreach ($fields as $field) {
+      if (in_array($field['type'], array('date', 'datestamp', 'datetime'))) {
+       $date_fields[$field['field_name']] = $field;
+      }
+    }
+    foreach ($form as $field_name => $element) {
+      if (substr($field_name, 0, 6) == 'field_') {
+        if (array_key_exists($field_name, $date_fields)) {
+          $field = $date_fields[$field_name];
+          foreach ($element as $context => $value) {
+            if (!in_array($context, array('human_name', 'weight', 'parent', 'label'))) {
+              if ($form[$field_name][$context]['format']['base']['#default_value'] == 'format_fdate' || $form[$field_name][$context]['format']['base']['#default_value'] == 'format_fdate_expanded') {
+                $form[$field_name][$context]['format']['extra']['multiple']['#access'] = 0;
+                $form[$field_name][$context]['format']['extra']['repeat']['#access'] = 0;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function date_repeat_fm_init() {
+  drupal_add_css(drupal_get_path('module', 'date_repeat_fm') . '/date_repeat_fm.css');
+  drupal_add_js(drupal_get_path('module', 'date_repeat_fm') . '/date_repeat_fm.js', 'theme');
+}
+
+/**
+ * Helper function; retrieve an fDate object from cache.
+ *
+ * @param $nid
+ *   Node object id.
+ * @param $field_name
+ *   Field name. 
+ *   must be accompanied by $nid.
+ * @return
+ *   An fDate object, or FALSE if it doesn't exist.
+ */
+function date_repeat_fm_fetch($nid, $field_name) {
+  $cache = new fDate_cache();
+  return $cache->fetch($nid, $field_name);
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function date_repeat_fm_theme($existing, $type, $theme, $path) {
+  return array(
+    'date_repeat_fm_formatter_format_fdate' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_formatter_format_fdate_expanded' => array(
+      'arguments' => array('element' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_dateline' => array(
+      'arguments' => array('fDate' => NULL, 'abbrev' => FALSE),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_duration' => array(
+      'arguments' => array('fDate' => NULL, 'index' => NULL, 'format' => FALSE),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_repeat_rule' => array(
+      'arguments' => array('fDate' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_period' => array(
+      'arguments' => array('fDate' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_next' => array(
+      'arguments' => array('fDate' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_ended' => array(
+      'arguments' => array(),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_view_all' => array(
+      'arguments' => array('fDate' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+    'date_repeat_fm_listing' => array(
+      'arguments' => array('fDate' => NULL),
+      'file' => 'date_repeat_fm.theme.inc',
+    ),
+  );
+}
+

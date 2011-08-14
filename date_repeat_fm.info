@@ -1,0 +1,8 @@
+; $Id$
+package = "Date/Time"
+name = Date Repeat Formatter
+description =  Provides formatters for prettier output of CCK dates, including repeating dates provided by Date Repeat API.
+dependencies[] = content
+dependencies[] = date
+core = "6.x"
+version = "6.x-1.0"

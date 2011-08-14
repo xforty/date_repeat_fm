@@ -1,0 +1,41 @@
+/* $Id$ */
+
+.field-type-date > .field-label,
+.field-type-datetime > .field-label,
+.field-type-datestamp > .field-label {
+  float:left;
+}
+
+.field-type-date .field-item,
+.field-type-datetime .field-item,
+.field-type-datestamp .field-item {
+  display:inline-block;
+}
+
+.date_repeat_fm-duration  {}
+.date_repeat_fm-duration em {}
+.past-date {}
+.date_repeat_fm-frequency {}
+.date_repeat_fm-period {}
+.date_repeat_fm-next {}
+
+.date_repeat_fm-view-all,
+.date_repeat_fm-ended {
+  display:inline-block;
+  margin-left:.5em;
+}
+
+.date_repeat_fm-listing {
+  display:none;
+}
+
+.date_repeat_fm-listing p {
+  font-style:italic;
+}
+
+.date_repeat_fm-listing  ul,
+.date_repeat_fm-listing  li { 
+  background:none;
+  list-style:none; 
+}
+
